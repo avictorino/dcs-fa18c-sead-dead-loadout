@@ -1,10 +1,12 @@
 <#
   SEAD/DEAD Hornet Mod - Uninstaller
-  Removes only the marker-bounded blocks this mod inserted into
-  FA-18C_hornet.lua / UnitPayloads\FA-18C_hornet.lua, leaving any
-  other mod's edits to those same files untouched. Also removes the
-  CustomWeapons\dead_sead_racks.lua and dead_sead_presets.lua files this
-  mod added.
+  Removes only the marker-bounded block this mod inserted into
+  FA-18C_hornet.lua, leaving any other mod's edits to that file
+  untouched. Also removes the CustomWeapons\dead_sead_racks.lua file
+  this mod added, plus any leftover dead_sead_presets.lua / marker
+  block in UnitPayloads\FA-18C_hornet.lua from an older version of
+  this mod (current versions don't touch UnitPayloads or add presets
+  at all - see README).
 
   File I/O uses raw .NET ReadAllText/WriteAllText (UTF-8, no BOM)
   instead of Get-Content/Set-Content, because Windows PowerShell's
