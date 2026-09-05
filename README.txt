@@ -114,6 +114,20 @@ also uses these exact same marker comments (won't happen) or renames
 the outboardLeft/outboardRight/inboardLeft/inboardRight locals
 (essentially never happens - those are core Hornet pylon-table names).
 
+ABOUT THE TWO REARM PRESETS ("Mission payload" dropdown)
+-------------------------------------------------------------
+The [SEAD]/[SEAD+DEAD] presets this mod adds live in the DCS install's
+own CoreMods\...\UnitPayloads\FA-18C_hornet.lua. The Mission Editor's
+quick-select "Mission payload" list, however, is actually populated from
+a separate PER-USER cache/save file:
+  <Saved Games>\DCS\MissionEditor\UnitPayloads\FA-18C_hornet.lua
+That's also where any loadout you save yourself from the ME's loadout
+editor ("Save Payload") ends up. Because these are two different files,
+this mod's presets may not show up in that particular dropdown even
+though the actual rack options (BRU-55/BRU-42A) work fine on the pylons
+themselves - and once you've saved even one custom payload of your own
+using those racks, you likely don't need this mod's presets at all.
+
 IMPORTANT
 ----------
 - Gameplay mod, not a real Hornet loadout - HARM/Maverick don't
