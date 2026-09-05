@@ -45,6 +45,7 @@ declare_loadout({
 	displayName     = _("BRU-55 - 2 x AGM-88 HARM"),
 	wsTypeOfWeapon  = wsType_HARM,
 	attribute       = {4, 4, 32, WSTYPE_PLACEHOLDER},
+	kind_of_shipping = 1, -- SUBMUNITION_AND_CONTAINER_SEPARATELY (same flag stock LAU-88/LAU-117 multi-Maverick racks use; experiment to try to get the SMS/cockpit stores page to recognize the 2 separate stores)
 	Count           = 2,
 	Weight          = 176.0 + 2 * HARM_UNIT_MASS,
 	Cx_pil          = 0.00244140625 + 2 * 0.001953125,
@@ -65,6 +66,7 @@ declare_loadout({
 	displayName     = _("BRU-42A - 3 x AGM-65F Maverick"),
 	wsTypeOfWeapon  = wsType_Maverick,
 	attribute       = {4, 4, 32, WSTYPE_PLACEHOLDER},
+	kind_of_shipping = 1, -- SUBMUNITION_AND_CONTAINER_SEPARATELY (same flag stock LAU-88 triple-Maverick rack uses; experiment to try to get the SMS/cockpit stores page to recognize the 3 separate stores)
 	Count           = 3,
 	Weight          = 50.80 + 3 * MAVERICK_UNIT_MASS,
 	Cx_pil          = 0.00244140625 + 3 * 0.001953125,
