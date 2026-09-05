@@ -38,22 +38,26 @@ local MAVERICK_CLSID = "LAU_117_AGM_65F"
 local HARM_UNIT_MASS     = 361.7   -- kg, AGM-88 + LAU-118 combo (aprox.)
 local MAVERICK_UNIT_MASS = 210.5   -- kg, AGM-65F + LAU-117 combo (aprox.)
 
--- NOTE: no WSTYPE_PLACEHOLDER in wsTypeOfWeapon. It only ever becomes a
--- real numeric ID via declare_weapon() - these two racks only
--- declare_loadout() (they're containers for already-existing munitions,
--- not new weapons), so an unresolved placeholder there stayed a raw
--- sentinel value and crashed the Mission Editor's warehouse code
--- (db_main.lua's wsTypeToString, via string.format expecting a number)
--- every time a map was opened. WSTYPE_PLACEHOLDER is fine in `attribute`
--- and `adapter_type` though - confirmed those don't get run through the
--- same formatter, unlike wsTypeOfWeapon.
+-- NOTE: no WSTYPE_PLACEHOLDER in wsTypeOfWeapon OR adapter_type. Both go
+-- through the same wsTypeToString/string.format code path in the Mission
+-- Editor's warehouse builder, and an unresolved placeholder crashes it
+-- either way ("bad argument #5 to 'format' (number expected, got
+-- string)") - confirmed for both fields the hard way, in-game. Only
+-- `attribute` is safe to leave as WSTYPE_PLACEHOLDER; adapter_type's 4th
+-- slot uses the literal id 4 below (the LAU-88 rack body's own type id,
+-- same for every AGM-65 variant's LAU-88 entry - not weapon-specific, so
+-- safe to reuse here even though we're not literally a LAU-88).
 local wsType_HARM     = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 local wsType_Maverick = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 
 -- Shared "this is a support/adapter rack" type descriptor, matching what
 -- every stock LAU-88 AGM-65 entry uses (same tuple regardless of Maverick
--- variant or count - it describes the RACK, not the missile).
-local ADAPTER_TYPE = {wsType_Weapon, wsType_GContainer, wsType_Support, WSTYPE_PLACEHOLDER}
+-- variant or count - it describes the RACK, not the missile). Using the
+-- literal id 4 here (not WSTYPE_PLACEHOLDER) - confirmed the hard way
+-- that adapter_type goes through the same wsTypeToString/string.format
+-- path as wsTypeOfWeapon, so an unresolved placeholder crashes the
+-- Mission Editor's warehouse code here too, exactly like it did there.
+local ADAPTER_TYPE = {wsType_Weapon, wsType_GContainer, wsType_Support, 4}
 
 ----------------------------------------------------------------
 -- Rack 1: BRU-55 (corpo do JSOW) com 2x AGM-88 HARM
