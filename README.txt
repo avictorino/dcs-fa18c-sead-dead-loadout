@@ -1,4 +1,4 @@
-F/A-18C SEAD/DEAD Loadout Extension - v0.2
+F/A-18C SEAD/DEAD Loadout Extension - v0.4
 ====================================================
 
 WHAT IT DOES
@@ -20,38 +20,61 @@ Mission Editor dropdown:
 HOW TO INSTALL
 ---------------
 1. Close DCS.
-2. Back up these 2 files from your DCS install folder:
-     CoreMods\aircraft\FA-18C\FA-18C_hornet.lua
-     CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua
-3. Copy the contents of "DROP CONTENTS IN MAIN DIRECTORY" into your
-   DCS install folder (e.g. C:\Program Files\Eagle Dynamics\DCS World).
-   Needs an elevated/Administrator terminal (Program Files is UAC-
-   protected):
-     robocopy "<this package>\DROP CONTENTS IN MAIN DIRECTORY" "C:\Program Files\Eagle Dynamics\DCS World" /E
-4. Launch DCS, check the F/A-18C loadout editor (stations 2/3/7/8)
+2. Right-click Install.ps1 -> Run with PowerShell as Administrator
+   (or open an elevated PowerShell and run `.\Install.ps1`).
+   It will try to auto-detect your DCS folder and your Saved Games
+   folder, ask you to confirm, and let you type a custom path if it
+   can't find (or you decline) either one.
+3. Launch DCS, check the F/A-18C loadout editor (stations 2/3/7/8)
    and the rearm menu for the new options.
 
-Note: this must be installed straight into the game folder, not
-Saved Games\DCS\Mods - that folder only overrides cockpit display
-scripts, not pylon/payload Lua (confirmed by testing).
+To remove it: run Uninstall.ps1 the same way (as Administrator).
+
+Both scripts also accept explicit paths to skip the prompts:
+  .\Install.ps1 -DcsPath "C:\..." -SavedGamesPath "C:\..."
+
+HOW THE SCRIPTS WORK (no whole-file overwrite)
+--------------------------------------------------
+Instead of replacing FA-18C_hornet.lua wholesale, Install.ps1 APPENDS
+a small block to the END of the file, wrapped in marker comments:
+  -- >>> SEAD_DEAD_MOD ... -- <<< SEAD_DEAD_MOD
+This works because outboardLeft/outboardRight/inboardLeft/inboardRight
+are `local` tables declared earlier in that same file - code appended
+at the end of the file still sees them (same Lua chunk) and runs
+before make_FA_18C_hornet() is ever called (that happens later, from
+outside the file), so the new options are present by the time the
+pylon list is built. The new dofile() call that loads this mod's
+weapon declarations is wrapped in pcall, so if that file ever fails
+to load, it logs the error instead of breaking aircraft loading.
+The rearm presets are added to UnitPayloads\FA-18C_hornet.lua the
+same way, inserted right before its mandatory "return unitPayloads"
+line.
+Uninstall.ps1 just deletes everything between the markers, so both
+scripts leave any other mod's edits to the same files untouched.
+Originals are backed up to .\backups\<timestamp>\ before the first
+patch, as a safety net.
+
+This install method (patching CoreMods directly) is required because
+Saved Games\DCS\Mods only overrides cockpit display scripts, not
+pylon/payload Lua files - confirmed by testing.
 
 MERGING WITH OTHER MODS
 -------------------------
-This mod replaces FA-18C_hornet.lua whole, so any other mod that
-also ships that file will conflict (last one installed wins). To
-use both: diff each mod against a pristine stock FA-18C_hornet.lua,
-then combine both sets of added/changed lines by hand into one file.
-Most weapon mods only touch a few CLSID lines for specific pylons,
-so this is usually a clean merge (e.g. this mod's AGM-65/AGM-88
-lines don't overlap with the "SVG Modern Air-to-Air Missiles" pack's
-AIM-120B/C lines).
+Because this only appends near stable, structural anchors (end of
+file / the return statement) instead of touching the middle of the
+file, it plays nicely with most other mods by default - it doesn't
+matter what they changed elsewhere. It only breaks if another mod
+also uses these exact same marker comments (won't happen) or renames
+the outboardLeft/outboardRight/inboardLeft/inboardRight locals
+(essentially never happens - those are core Hornet pylon-table names).
 
 IMPORTANT
 ----------
 - Gameplay mod, not a real Hornet loadout - HARM/Maverick don't
   really mount on multi-rail racks; visuals may look cramped.
 - Breaks Integrity Check - offline/solo use only.
-- A DCS update can revert these files - reinstall after updating.
+- A DCS update can revert these files - just re-run Install.ps1
+  after updating (it backs up and patches again).
 - Rack weights are estimates, tune later if flight/fuel feels off.
 
 TODO before a DCS User Files release
