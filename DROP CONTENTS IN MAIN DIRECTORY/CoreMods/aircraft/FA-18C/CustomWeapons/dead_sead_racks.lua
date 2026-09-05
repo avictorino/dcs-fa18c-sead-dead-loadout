@@ -82,32 +82,26 @@ declare_loadout({
 })
 
 ----------------------------------------------------------------
--- Rack 2: BRU-42A (corpo do TALD triplo - posicionamento ja comprovado
--- visualmente, das primeiras versoes do mod) com 3x AGM-65F Maverick.
--- O corpo LAU-88 real, com Position/Rotation copiados do stock, nao
--- renderizou os misseis no Hornet (so o corpo do rack aparecia vazio) -
--- ao inves de continuar adivinhando offsets pro LAU-88, voltamos pro
--- corpo que ja sabemos que posiciona certo (BRU-42A, via connector_name),
--- so trocando payload_CLSID por ShapeName (a mudanca que buscamos pra
--- SMS reconhecer o estoque).
+-- Rack 2: BRU-55 (mesmo corpo do rack de HARM acima, ja comprovado que
+-- renderiza certo) com 2x AGM-65F Maverick - so os 2 pontos de conexao
+-- confirmados (Point01/Point02, os mesmos que o JSOW stock usa).
 ----------------------------------------------------------------
 declare_loadout({
 	category        = CAT_MISSILES,
-	CLSID           = "{BRU42A_x3_AGM65F}",
+	CLSID           = "{BRU55_2xAGM65F}",
 	Picture         = "agm65.png",
-	displayName     = _("BRU-42A - 3 x AGM-65F Maverick"),
+	displayName     = _("BRU-55 - 2 x AGM-65F Maverick"),
 	wsTypeOfWeapon  = wsType_Maverick,
 	attribute       = {4, 4, 32, WSTYPE_PLACEHOLDER},
 	kind_of_shipping = 1, -- SUBMUNITION_AND_CONTAINER_SEPARATELY
 	adapter_type     = ADAPTER_TYPE,
-	Count           = 3,
-	Weight          = 50.80 + 3 * MAVERICK_UNIT_MASS,
-	Cx_pil          = 0.00244140625 + 3 * 0.001953125,
+	Count           = 2,
+	Weight          = 176.0 + 2 * MAVERICK_UNIT_MASS,
+	Cx_pil          = 0.00244140625 + 2 * 0.001953125,
 	Elements = {
-		{ ShapeName = "BRU_42A", IsAdapter = true },
+		{ ShapeName = "BRU_55", IsAdapter = true, DrawArgs = {{3, 0.1}} },
 		{ connector_name = "Point01", ShapeName = MAVERICK_SHAPE },
 		{ connector_name = "Point02", ShapeName = MAVERICK_SHAPE },
-		{ connector_name = "Point03", ShapeName = MAVERICK_SHAPE },
 	}
 })
 
@@ -116,7 +110,7 @@ declare_loadout({
 ----------------------------------------------------------------
 local function addOptions(pylonOptionTable)
 	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",      Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
-	table.insert(pylonOptionTable, { CLSID = "{BRU42A_x3_AGM65F}",   Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
+	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM65F}",     Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
 end
 
 addOptions(outboardLeft)
