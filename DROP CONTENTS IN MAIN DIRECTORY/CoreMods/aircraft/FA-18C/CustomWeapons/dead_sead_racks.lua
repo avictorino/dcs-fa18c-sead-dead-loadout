@@ -78,12 +78,23 @@ declare_loadout({
 	}
 })
 
+-- TEST ONLY (Option A): a REAL, unmodified, already-declared LAU-88 with
+-- 3x AGM-65E, from agm65_family.lua - the exact same CLSID the A-10/F-16
+-- use, with its own correct kind_of_shipping/adapter_type/attribute ID
+-- already set by Eagle Dynamics. We declare nothing new here; we're only
+-- adding it as a pylon OPTION to see whether the Hornet's compiled SMS/
+-- stores avionics can display ANY multi-item rack at all, or whether
+-- that capability just isn't implemented for this aircraft regardless of
+-- CLSID. Remove this block once the test result is known either way.
+local TEST_REAL_LAU88_3xAGM65E_CLSID = "{71AAB9B8-81C1-4925-BE50-1EF8E9899271}"
+
 ----------------------------------------------------------------
 -- Add both racks as options on all 4 wing stations
 ----------------------------------------------------------------
 local function addOptions(pylonOptionTable)
 	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
 	table.insert(pylonOptionTable, { CLSID = "{BRU42A_x3_AGM65F}", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
+	table.insert(pylonOptionTable, { CLSID = TEST_REAL_LAU88_3xAGM65E_CLSID })
 end
 
 addOptions(outboardLeft)
