@@ -29,10 +29,17 @@
 	   model matched by name/convention to the already-declared weapon),
 	   NOT `payload_CLSID` (which creates a separate, independently-
 	   tracked weapon object - the TALD/JSOW pattern we originally copied
-	   this whole mod's rack technique from). Switched to ShapeName below
-	   - "AGM-65F" (matches AGM_65F's own `model` field in agm65_family.lua)
-	   and "agm-88" (matches Bazar/World/Shapes/agm-88.edm) - to match the
-	   working pattern as closely as possible. Needs in-game confirmation.
+	   this whole mod's rack technique from). Switched to ShapeName -
+	   "AGM-65F" (matches AGM_65F's own `model` field in agm65_family.lua)
+	   and "agm-88" (matches Bazar/World/Shapes/agm-88.edm).
+	4) Tried rebuilding the Maverick rack around the real "LAU-88" shape
+	   with the exact Position/Rotation offsets stock lau_88() uses - the
+	   rack body rendered but the 3 missiles didn't (empty rack visually).
+	   Reverted to the BRU-42A body via connector_name (Point01/02/03),
+	   which we already know positions correctly (used successfully by
+	   this mod since its first version) - same ShapeName-based Elements,
+	   just on a body/placement method we know works. Needs in-game
+	   confirmation both for rendering and for SMS recognition.
 ]]
 
 local outboardLeft, outboardRight, inboardLeft, inboardRight = ...
@@ -75,28 +82,32 @@ declare_loadout({
 })
 
 ----------------------------------------------------------------
--- Rack 2: LAU-88 (corpo real de fabrica) com 3x AGM-65F Maverick
--- Mesma geometria (posicoes/rotacoes) que o lau_88() stock usa pra
--- count=3, copiada de agm65_family.lua - sao os offsets corretos pro
--- modelo 3D real do LAU-88, entao reaproveitamos em vez de adivinhar.
+-- Rack 2: BRU-42A (corpo do TALD triplo - posicionamento ja comprovado
+-- visualmente, das primeiras versoes do mod) com 3x AGM-65F Maverick.
+-- O corpo LAU-88 real, com Position/Rotation copiados do stock, nao
+-- renderizou os misseis no Hornet (so o corpo do rack aparecia vazio) -
+-- ao inves de continuar adivinhando offsets pro LAU-88, voltamos pro
+-- corpo que ja sabemos que posiciona certo (BRU-42A, via connector_name),
+-- so trocando payload_CLSID por ShapeName (a mudanca que buscamos pra
+-- SMS reconhecer o estoque).
 ----------------------------------------------------------------
 declare_loadout({
 	category        = CAT_MISSILES,
-	CLSID           = "{LAU88_x3_AGM65F}",
+	CLSID           = "{BRU42A_x3_AGM65F}",
 	Picture         = "agm65.png",
-	displayName     = _("LAU-88 - 3 x AGM-65F Maverick"),
+	displayName     = _("BRU-42A - 3 x AGM-65F Maverick"),
 	wsTypeOfWeapon  = wsType_Maverick,
 	attribute       = {4, 4, 32, WSTYPE_PLACEHOLDER},
 	kind_of_shipping = 1, -- SUBMUNITION_AND_CONTAINER_SEPARATELY
 	adapter_type     = ADAPTER_TYPE,
 	Count           = 3,
-	Weight          = 90.0 + 3 * MAVERICK_UNIT_MASS,  -- LAU-88 empty mass (aprox, stock uses ~90kg)
+	Weight          = 50.80 + 3 * MAVERICK_UNIT_MASS,
 	Cx_pil          = 0.00244140625 + 3 * 0.001953125,
 	Elements = {
-		{ ShapeName = "LAU-88", IsAdapter = true },
-		{ Position = {0.252, -0.146, 0},     ShapeName = MAVERICK_SHAPE, Rotation = {0, 0, 0} },
-		{ Position = {0.252, 0.085, 0.259},  ShapeName = MAVERICK_SHAPE, Rotation = {-90, 0, 0} },
-		{ Position = {0.252, 0.085, -0.259}, ShapeName = MAVERICK_SHAPE, Rotation = {90, 0, 0} },
+		{ ShapeName = "BRU_42A", IsAdapter = true },
+		{ connector_name = "Point01", ShapeName = MAVERICK_SHAPE },
+		{ connector_name = "Point02", ShapeName = MAVERICK_SHAPE },
+		{ connector_name = "Point03", ShapeName = MAVERICK_SHAPE },
 	}
 })
 
@@ -105,7 +116,7 @@ declare_loadout({
 ----------------------------------------------------------------
 local function addOptions(pylonOptionTable)
 	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",      Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
-	table.insert(pylonOptionTable, { CLSID = "{LAU88_x3_AGM65F}",    Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
+	table.insert(pylonOptionTable, { CLSID = "{BRU42A_x3_AGM65F}",   Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
 end
 
 addOptions(outboardLeft)
