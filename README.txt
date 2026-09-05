@@ -99,10 +99,35 @@ marker comment (won't happen) or renames the outboardLeft/
 outboardRight/inboardLeft/inboardRight locals (essentially never
 happens - those are core Hornet pylon-table names).
 
+KNOWN LIMITATION: SMS/stores page shows nothing for these racks
+--------------------------------------------------------------------
+The weapons ARE physically mounted (correct 3D model, correct pylon
+selection, genuine AGM-88/AGM-65F objects at each connector point),
+but the cockpit's own MPCD "STORES"/SMS page won't show them as
+tracked inventory. This isn't a data/config bug we can fix from here:
+the F/A-18C's clickable-cockpit avionics (unlike the open, moddable
+AircraftWeaponPack Lua) are compiled and not exposed as editable Lua
+at all - there's no Cockpit\Scripts folder for this aircraft to patch.
+Compared against the stock LAU-88 rack (A-10/F-16, natively carries
+1-3 Maverick with full SMS recognition) in agm65_family.lua: it sets
+kind_of_shipping = 1 (SUBMUNITION_AND_CONTAINER_SEPARATELY) and a
+registry-assigned adapter_type ID, and reuses the real AGM-65 variant's
+already-resolved wsTypeOfWeapon. This mod's racks now set
+kind_of_shipping = 1 too (as an experiment - confirmed in-game to make
+no visible difference on the Hornet, but left in since it's harmless
+and matches stock convention). adapter_type was deliberately NOT
+guessed at, since those numeric IDs come from Eagle Dynamics' internal
+registry and reusing/inventing one risks colliding with a real weapon's
+ID. Bottom line: this is a hard ceiling of the "reuse an existing rack's
+CLSID slot" technique on a full-fidelity module with protected avionics
+- it works for the loadout editor and (should) work for actually firing
+the weapons via manual/CCIP delivery, just not for the SMS readout.
+
 IMPORTANT
 ----------
 - Gameplay mod, not a real Hornet loadout - HARM/Maverick don't
   really mount on multi-rail racks; visuals may look cramped.
+- SMS/stores cockpit page doesn't recognize these racks - see above.
 - Breaks Integrity Check - offline/solo use only.
 - A DCS update can revert FA-18C_hornet.lua - just re-run Install.ps1
   after updating (it backs up and patches again).
