@@ -23,8 +23,17 @@ local MAVERICK_CLSID = "{F16A4DE0-116C-4A71-97F0-2CF85B0313EC}"
 local HARM_UNIT_MASS     = 361.7   -- kg, AGM-88 + LAU-118 combo (aprox.)
 local MAVERICK_UNIT_MASS = 307.0   -- kg, AGM-65E + LAU-117 combo (aprox.)
 
-local wsType_HARM     = {wsType_Weapon, wsType_Missile, wsType_AS_Missile, WSTYPE_PLACEHOLDER}
-local wsType_Maverick = {wsType_Weapon, wsType_Missile, wsType_AS_Missile, WSTYPE_PLACEHOLDER}
+-- NOTE: no WSTYPE_PLACEHOLDER here. It only ever becomes a real numeric ID
+-- via declare_weapon() - these two racks only declare_loadout() (they're
+-- containers for already-existing munitions, not new weapons), so an
+-- unresolved placeholder stayed a raw sentinel value and crashed the
+-- Mission Editor's warehouse code (db_main.lua's wsTypeToString, called via
+-- string.format expecting a number) every time a map was opened. Stock
+-- racks avoid this by reusing an already-registered weapon's resolved
+-- wsTypeOfWeapon table (e.g. ADM_141A.wsTypeOfWeapon) - we don't have a
+-- Lua reference to AGM-88/AGM-65's own table, so we just omit the 4th slot.
+local wsType_HARM     = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
+local wsType_Maverick = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 
 ----------------------------------------------------------------
 -- Rack 1: BRU-55 (corpo do JSOW) com 2x AGM-88 HARM
