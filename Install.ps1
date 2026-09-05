@@ -108,14 +108,24 @@ $SavedGamesCandidates = @(
     (Join-Path $env:USERPROFILE "Saved Games\DCS"),
     (Join-Path $env:USERPROFILE "Saved Games\DCS.openbeta")
 )
+# Required now (not just for the closing log-path hint): this is where the
+# mod's actual .lua files get placed - see note below on why Program Files
+# isn't used for these two files.
 $SavedGames = Resolve-InteractivePath -Override $SavedGamesPath -Candidates $SavedGamesCandidates `
-    -FriendlyName "your DCS Saved Games folder (only used to point you at dcs.log afterward)" -Optional
-if ($SavedGames) { Write-Host "Using Saved Games folder: $SavedGames" -ForegroundColor Cyan }
+    -FriendlyName "your DCS Saved Games folder"
+Write-Host "Using Saved Games folder: $SavedGames" -ForegroundColor Cyan
 
 $PkgRoot      = Join-Path $PSScriptRoot "DROP CONTENTS IN MAIN DIRECTORY\CoreMods\aircraft\FA-18C"
 $Fa18File     = Join-Path $Dcs "CoreMods\aircraft\FA-18C\FA-18C_hornet.lua"
 $PayFile      = Join-Path $Dcs "CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua"
-$CustomDir    = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons"
+# The mod's actual logic files (dead_sead_racks.lua / dead_sead_presets.lua)
+# are loaded via an ABSOLUTE path baked into the tiny block appended to the
+# two files above - Lua's loadfile() is plain OS file access, it doesn't go
+# through DCS's mod/VFS system at all. So these two files don't need to live
+# under the DCS install (Program Files) like the stock files they patch -
+# putting them in Saved Games instead means a DCS repair/verify pass has no
+# reason to ever touch or flag them.
+$CustomDir    = Join-Path $SavedGames "Mods\aircraft\FA-18C\CustomWeapons"
 $RacksSrc     = Join-Path $PkgRoot "CustomWeapons\dead_sead_racks.lua"
 $RacksDst     = Join-Path $CustomDir "dead_sead_racks.lua"
 $PresetsSrc   = Join-Path $PkgRoot "CustomWeapons\dead_sead_presets.lua"

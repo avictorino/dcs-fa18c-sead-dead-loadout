@@ -101,15 +101,15 @@ $SavedGamesCandidates = @(
     (Join-Path $env:USERPROFILE "Saved Games\DCS"),
     (Join-Path $env:USERPROFILE "Saved Games\DCS.openbeta")
 )
+# Optional here: current installs keep dead_sead_racks.lua / dead_sead_presets.lua
+# under Saved Games, but if we can't find it we still remove the marker blocks
+# from the DCS install and clean up any older (pre-v0.5) copy left in Program Files.
 $SavedGames = Resolve-InteractivePath -Override $SavedGamesPath -Candidates $SavedGamesCandidates `
-    -FriendlyName "your DCS Saved Games folder (only used to point you at dcs.log afterward)" -Optional
+    -FriendlyName "your DCS Saved Games folder (where this mod's .lua files live)" -Optional
 if ($SavedGames) { Write-Host "Using Saved Games folder: $SavedGames" -ForegroundColor Cyan }
 
-$Fa18File  = Join-Path $Dcs "CoreMods\aircraft\FA-18C\FA-18C_hornet.lua"
-$PayFile   = Join-Path $Dcs "CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua"
-$CustomDir    = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons"
-$RacksDst     = Join-Path $CustomDir "dead_sead_racks.lua"
-$PresetsDst   = Join-Path $CustomDir "dead_sead_presets.lua"
+$Fa18File = Join-Path $Dcs "CoreMods\aircraft\FA-18C\FA-18C_hornet.lua"
+$PayFile  = Join-Path $Dcs "CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua"
 
 $n1 = Remove-MarkedBlocks -Path $Fa18File
 Write-Host "Removed $n1 marked block(s) from: $Fa18File"
@@ -117,15 +117,28 @@ Write-Host "Removed $n1 marked block(s) from: $Fa18File"
 $n2 = Remove-MarkedBlocks -Path $PayFile
 Write-Host "Removed $n2 marked block(s) from: $PayFile"
 
-foreach ($f in @($RacksDst, $PresetsDst)) {
-    if (Test-Path $f) {
-        Remove-Item $f -Force
-        Write-Host "Removed: $f"
+# Current (v0.5+) location: Saved Games\...\Mods\aircraft\FA-18C\CustomWeapons
+if ($SavedGames) {
+    $CustomDir = Join-Path $SavedGames "Mods\aircraft\FA-18C\CustomWeapons"
+    foreach ($f in @("dead_sead_racks.lua", "dead_sead_presets.lua")) {
+        $p = Join-Path $CustomDir $f
+        if (Test-Path $p) { Remove-Item $p -Force; Write-Host "Removed: $p" }
+    }
+    if ((Test-Path $CustomDir) -and ((Get-ChildItem $CustomDir -Force | Measure-Object).Count -eq 0)) {
+        Remove-Item $CustomDir -Force
+        Write-Host "Removed empty folder: $CustomDir"
     }
 }
-if ((Test-Path $CustomDir) -and ((Get-ChildItem $CustomDir -Force | Measure-Object).Count -eq 0)) {
-    Remove-Item $CustomDir -Force
-    Write-Host "Removed empty folder: $CustomDir"
+
+# Older (pre-v0.5) location: under the DCS install itself - clean up if present.
+$OldCustomDir = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons"
+foreach ($f in @("dead_sead_racks.lua", "dead_sead_presets.lua")) {
+    $p = Join-Path $OldCustomDir $f
+    if (Test-Path $p) { Remove-Item $p -Force; Write-Host "Removed (old location): $p" }
+}
+if ((Test-Path $OldCustomDir) -and ((Get-ChildItem $OldCustomDir -Force | Measure-Object).Count -eq 0)) {
+    Remove-Item $OldCustomDir -Force
+    Write-Host "Removed empty folder: $OldCustomDir"
 }
 
 if ($n1 -eq 0 -and $n2 -eq 0) {

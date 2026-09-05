@@ -1,4 +1,4 @@
-F/A-18C SEAD/DEAD Loadout Extension - v0.5
+F/A-18C SEAD/DEAD Loadout Extension - v0.6
 ====================================================
 
 WHAT IT DOES
@@ -63,12 +63,29 @@ Both loadfile() calls use an absolute path baked in by Install.ps1 at
 install time (not current_mod_path or lfs.currentdir()), since
 there's no guarantee either of those globals is valid in whatever Lua
 state loads the payloads file.
-Uninstall.ps1 deletes everything between the markers in both files
-(each checked/skipped independently, so a partially-applied previous
-install can't cause a double-insert) and removes both CustomWeapons
-files it added - leaving any other mod's edits to the same files
-untouched. Originals are backed up to .\backups\<timestamp>\ before
-the first patch, as a safety net.
+
+Because loadfile() is plain Lua/OS file access - it doesn't go through
+DCS's own mod/VFS system - dead_sead_racks.lua and dead_sead_presets.lua
+don't need to live under the DCS install at all. Install.ps1 places
+them in your SAVED GAMES folder instead:
+  <Saved Games>\DCS\Mods\aircraft\FA-18C\CustomWeapons\dead_sead_racks.lua
+  <Saved Games>\DCS\Mods\aircraft\FA-18C\CustomWeapons\dead_sead_presets.lua
+using the same Saved Games path it already resolved (auto-detected or
+typed in) at the start of the script - not Program Files. This keeps
+the mod's own logic out of the game install folder entirely, so a DCS
+repair/verify pass has no reason to ever touch or flag it. Only the
+tiny loader block still has to go into the two stock files themselves
+(FA-18C_hornet.lua / UnitPayloads\FA-18C_hornet.lua), since that's
+where the anchors we patch against live.
+
+Uninstall.ps1 deletes everything between the markers in both stock
+files (each checked/skipped independently, so a partially-applied
+previous install can't cause a double-insert) and removes the
+CustomWeapons files from Saved Games - and, for anyone upgrading from
+an older version of this mod that placed them under Program Files
+instead, cleans those up too. Any other mod's edits to the same files
+are left untouched. Originals are backed up to .\backups\<timestamp>\
+before the first patch, as a safety net.
 
 UPGRADING FROM AN OLDER VERSION OF THIS MOD
 -----------------------------------------------
@@ -80,9 +97,12 @@ run this version's Uninstall.ps1 first (it strips the old marker
 block just as well as the new one), then run Install.ps1 again to get
 the current, minimal-footprint version.
 
-This install method (patching CoreMods directly) is required because
-Saved Games\DCS\Mods only overrides cockpit display scripts, not
-pylon/payload Lua files - confirmed by testing.
+Patching the two stock files directly (instead of overriding them
+from Saved Games\DCS\Mods) is required because that override folder
+only works for cockpit display scripts, not pylon/payload Lua files -
+confirmed by testing. This mod's OWN logic files don't have that
+restriction (see above), since they're reached via a plain absolute
+loadfile() path, not through DCS's override/VFS system at all.
 
 MERGING WITH OTHER MODS
 -------------------------
