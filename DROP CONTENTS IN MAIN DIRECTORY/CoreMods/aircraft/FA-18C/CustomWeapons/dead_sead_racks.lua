@@ -41,7 +41,7 @@ local HARM_SHAPE     = "agm-88"    -- matches Bazar/World/Shapes/agm-88.edm
 local MAVERICK_SHAPE = "AGM-65F"   -- matches AGM_65F.model in agm65_family.lua
 
 local HARM_UNIT_MASS     = 361.7   -- kg, AGM-88 + LAU-118 combo (aprox.)
-local MAVERICK_UNIT_MASS = 210.5   -- kg, AGM-65F + LAU-117 combo (aprox.)
+local MAVERICK_UNIT_MASS = 301.0   -- kg, real AGM-65F mass (M=301.0 in AGM_65F's own declare_weapon table) - was 210.5 (a guess), which undercounted vs the real weight the engine now attributes to each ShapeName="AGM-65F" element, causing a "negative weight" warning
 
 local wsType_HARM     = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 local wsType_Maverick = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
@@ -93,7 +93,7 @@ declare_loadout({
 	Weight          = 90.0 + 3 * MAVERICK_UNIT_MASS,  -- LAU-88 empty mass (aprox, stock uses ~90kg)
 	Cx_pil          = 0.00244140625 + 3 * 0.001953125,
 	Elements = {
-		{ ShapeName = "LAU-88" },
+		{ ShapeName = "LAU-88", IsAdapter = true },
 		{ Position = {0.252, -0.146, 0},     ShapeName = MAVERICK_SHAPE, Rotation = {0, 0, 0} },
 		{ Position = {0.252, 0.085, 0.259},  ShapeName = MAVERICK_SHAPE, Rotation = {-90, 0, 0} },
 		{ Position = {0.252, 0.085, -0.259}, ShapeName = MAVERICK_SHAPE, Rotation = {90, 0, 0} },
