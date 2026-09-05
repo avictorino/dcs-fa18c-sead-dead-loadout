@@ -39,14 +39,11 @@
 
 local outboardLeft, outboardRight, inboardLeft, inboardRight = ...
 
-local HARM_CLSID     = "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"
-local MAVERICK_CLSID = "LAU_117_AGM_65F"
+local HARM_CLSID = "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"
 
-local HARM_UNIT_MASS     = 361.7   -- kg, AGM-88 + LAU-118 combo (aprox.)
-local MAVERICK_UNIT_MASS = 210.5   -- kg, AGM-65F + LAU-117 combo (aprox.)
+local HARM_UNIT_MASS = 361.7   -- kg, AGM-88 + LAU-118 combo (aprox.)
 
-local wsType_HARM     = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
-local wsType_Maverick = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
+local wsType_HARM = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 
 -- "Support/adapter rack" type descriptor (see history note above) - kept
 -- even though it alone didn't fix SMS recognition, since it's harmless.
@@ -75,33 +72,22 @@ declare_loadout({
 })
 
 ----------------------------------------------------------------
--- Rack 2: BRU-55 (mesmo corpo, ja comprovado) com 2x AGM-65F Maverick
+-- Rack 2 (Maverick): NAO declaramos nada nosso aqui. Reaproveitamos o
+-- CLSID REAL, ja pronto e ja usado pelo A-10/F-16 (LAU-88 com 3x
+-- AGM-65E, de agm65_family.lua) - o mesmo que testamos antes e
+-- confirmamos que aparece certo na SMS do Hornet. Vira AGM-65E em vez
+-- de F (nao existe LAU-88 triplo pronto pro F no jogo), mas ganha
+-- reconhecimento pleno de estoque sem nenhum hack. HARM continua
+-- intocado (ver Rack 1 acima).
 ----------------------------------------------------------------
-declare_loadout({
-	category        = CAT_MISSILES,
-	CLSID           = "{BRU55_2xAGM65F}",
-	Picture         = "agm65.png",
-	displayName     = _("BRU-55 - 2 x AGM-65F Maverick"),
-	wsTypeOfWeapon  = wsType_Maverick,
-	attribute       = {4, 4, 32, WSTYPE_PLACEHOLDER},
-	kind_of_shipping = 1, -- SUBMUNITION_AND_CONTAINER_SEPARATELY
-	adapter_type     = ADAPTER_TYPE,
-	Count           = 2,
-	Weight          = 176.0 + 2 * MAVERICK_UNIT_MASS,
-	Cx_pil          = 0.00244140625 + 2 * 0.001953125,
-	Elements = {
-		{ ShapeName = "BRU_55", IsAdapter = true, DrawArgs = {{3, 0.1}} },
-		{ payload_CLSID = MAVERICK_CLSID, connector_name = "Point01" },
-		{ payload_CLSID = MAVERICK_CLSID, connector_name = "Point02" },
-	}
-})
+local REAL_LAU88_3xAGM65E_CLSID = "{71AAB9B8-81C1-4925-BE50-1EF8E9899271}"
 
 ----------------------------------------------------------------
 -- Add both racks as options on all 4 wing stations
 ----------------------------------------------------------------
 local function addOptions(pylonOptionTable)
-	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",  Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
-	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM65F}", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
+	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}", Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
+	table.insert(pylonOptionTable, { CLSID = REAL_LAU88_3xAGM65E_CLSID })
 end
 
 addOptions(outboardLeft)
