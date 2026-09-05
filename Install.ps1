@@ -171,19 +171,22 @@ if (-not $payAlreadyDone)  { Backup-File -Path $PayFile  -BackupRoot $BackupRoot
 #    local outboardLeft/outboardRight/inboardLeft/inboardRight pylon-option
 #    tables as arguments and append its own new rack options to them - the
 #    only reason it can reach those normally-out-of-scope locals at all.
-#    Wrapped in pcall so a problem loading that file can't take down the
-#    whole aircraft/database load.
+#    NOTE: pcall() is NOT available in this Lua state (DCS's aircraft/weapon
+#    database loader) - confirmed empirically (calling it throws "attempt to
+#    call global 'pcall' (a nil value)"), so this can't be wrapped in a true
+#    try/catch. loadfile() itself is safe though - it returns nil + an error
+#    string on failure instead of throwing - so a missing/broken file is
+#    still handled gracefully and logged instead of crashing anything.
 $fa18Block = @(
     $MARK_BEGIN,
-    "local ok, err = pcall(function()",
-    "	local chunk = assert(loadfile(`"$RacksDstLua`"))",
+    "local chunk, loadErr = loadfile(`"$RacksDstLua`")",
+    "if chunk then",
     "	chunk(outboardLeft, outboardRight, inboardLeft, inboardRight)",
-    "end)",
-    "if not ok then",
+    "else",
     "	if log and log.write then",
-    "		log.write('SEAD_DEAD_MOD', log.ERROR, 'Failed to load dead_sead_racks.lua: '..tostring(err))",
+    "		log.write('SEAD_DEAD_MOD', log.ERROR, 'Failed to load dead_sead_racks.lua: '..tostring(loadErr))",
     "	else",
-    "		print('[SEAD_DEAD_MOD] Failed to load dead_sead_racks.lua: '..tostring(err))",
+    "		print('[SEAD_DEAD_MOD] Failed to load dead_sead_racks.lua: '..tostring(loadErr))",
     "	end",
     "end",
     $MARK_END
@@ -204,15 +207,14 @@ if ($fa18AlreadyDone) {
 #    that file, not here.
 $presetBlock = @(
     $MARK_BEGIN,
-    "local ok, err = pcall(function()",
-    "	local chunk = assert(loadfile(`"$PresetsDstLua`"))",
+    "local chunk, loadErr = loadfile(`"$PresetsDstLua`")",
+    "if chunk then",
     "	chunk(unitPayloads)",
-    "end)",
-    "if not ok then",
+    "else",
     "	if log and log.write then",
-    "		log.write('SEAD_DEAD_MOD', log.ERROR, 'Failed to load dead_sead_presets.lua: '..tostring(err))",
+    "		log.write('SEAD_DEAD_MOD', log.ERROR, 'Failed to load dead_sead_presets.lua: '..tostring(loadErr))",
     "	else",
-    "		print('[SEAD_DEAD_MOD] Failed to load dead_sead_presets.lua: '..tostring(err))",
+    "		print('[SEAD_DEAD_MOD] Failed to load dead_sead_presets.lua: '..tostring(loadErr))",
     "	end",
     "end",
     $MARK_END
