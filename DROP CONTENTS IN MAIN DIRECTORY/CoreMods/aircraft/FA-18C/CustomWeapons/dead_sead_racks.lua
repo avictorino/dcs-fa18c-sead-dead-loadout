@@ -1,10 +1,7 @@
 --[[
 	SEAD/DEAD Hornet Mod - custom multi-rack weapon declarations
-	Reaproveita a arquitetura de rack do TALD (BRU-42A) e do JSOW (BRU-55)
-	ja existentes no jogo (AircraftWeaponPack), so trocando o payload_CLSID
-	de cada "Point0X" para AGM-88 (HARM) ou AGM-65F (Maverick).
 
-	CLSIDs de munição reaproveitados do stock (ver FA-18C_hornet.lua original):
+	CLSIDs de munição reaproveitados do stock:
 		AGM-88 on LAU-118  -> {B06DD79A-F21E-4EB9-BD9D-AB3844618C93}
 		AGM-65F on LAU-117 -> LAU_117_AGM_65F
 
@@ -14,49 +11,45 @@
 	options to them, since they're normally out of reach (local to that
 	other file's own chunk). Everything else the mod needs lives here.
 
-	SMS/stores page fix: confirmed in-game that a REAL stock LAU-88 rack
-	(3x AGM-65E, {71AAB9B8-81C1-4925-BE50-1EF8E9899271} from
-	agm65_family.lua) DOES show up correctly on the Hornet's stores page,
-	so the avionics CAN display multi-item racks - it isn't a hard
-	per-aircraft wall like we first thought. That entry (see the stock
-	lau_88() function) sets two fields ours didn't:
-		kind_of_shipping = 1  -- SUBMUNITION_AND_CONTAINER_SEPARATELY
-		adapter_type = {wsType_Weapon, wsType_GContainer, wsType_Support, 4}
-	adapter_type's "4" is the LAU-88 rack-body's own type id - it's the
-	same across every AGM-65 variant's LAU-88 entry (not weapon-specific),
-	so it's reused here too. Our racks now set both fields, still under
-	our own CLSIDs (so AGM-65F, which has no real LAU-88 entry to borrow,
-	stays available) - this is the next experiment, needs in-game
-	confirmation either way.
+	SMS/stores page - full history of what we learned getting this to work:
+	1) A REAL stock LAU-88 rack (3x AGM-65E, from agm65_family.lua) DOES
+	   show up correctly on the Hornet's stores page, so the avionics CAN
+	   display multi-item racks - it isn't a hard per-aircraft wall.
+	2) That rack sets kind_of_shipping = 1 (SUBMUNITION_AND_CONTAINER_
+	   SEPARATELY) and adapter_type = {wsType_Weapon, wsType_GContainer,
+	   wsType_Support, 4} - id 4 identifies the LAU-88 rack body itself,
+	   shared across every AGM-65 variant's LAU-88 entry, not weapon-
+	   specific. Both are now set below. WSTYPE_PLACEHOLDER crashes the
+	   Mission Editor's warehouse code if left in adapter_type OR
+	   wsTypeOfWeapon (same string.format bug, confirmed twice the hard
+	   way) - only `attribute` tolerates it.
+	3) Even with both of those fields set, the SMS still didn't show our
+	   racks. The real structural difference: stock lau_88()/lau_117()
+	   build each missile Element with a plain `ShapeName` (a decorative
+	   model matched by name/convention to the already-declared weapon),
+	   NOT `payload_CLSID` (which creates a separate, independently-
+	   tracked weapon object - the TALD/JSOW pattern we originally copied
+	   this whole mod's rack technique from). Switched to ShapeName below
+	   - "AGM-65F" (matches AGM_65F's own `model` field in agm65_family.lua)
+	   and "agm-88" (matches Bazar/World/Shapes/agm-88.edm) - to match the
+	   working pattern as closely as possible. Needs in-game confirmation.
 ]]
 
 local outboardLeft, outboardRight, inboardLeft, inboardRight = ...
 
-local HARM_CLSID     = "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"
-local MAVERICK_CLSID = "LAU_117_AGM_65F"
+local HARM_SHAPE     = "agm-88"    -- matches Bazar/World/Shapes/agm-88.edm
+local MAVERICK_SHAPE = "AGM-65F"   -- matches AGM_65F.model in agm65_family.lua
 
 local HARM_UNIT_MASS     = 361.7   -- kg, AGM-88 + LAU-118 combo (aprox.)
 local MAVERICK_UNIT_MASS = 210.5   -- kg, AGM-65F + LAU-117 combo (aprox.)
 
--- NOTE: no WSTYPE_PLACEHOLDER in wsTypeOfWeapon OR adapter_type. Both go
--- through the same wsTypeToString/string.format code path in the Mission
--- Editor's warehouse builder, and an unresolved placeholder crashes it
--- either way ("bad argument #5 to 'format' (number expected, got
--- string)") - confirmed for both fields the hard way, in-game. Only
--- `attribute` is safe to leave as WSTYPE_PLACEHOLDER; adapter_type's 4th
--- slot uses the literal id 4 below (the LAU-88 rack body's own type id,
--- same for every AGM-65 variant's LAU-88 entry - not weapon-specific, so
--- safe to reuse here even though we're not literally a LAU-88).
 local wsType_HARM     = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 local wsType_Maverick = {wsType_Weapon, wsType_Missile, wsType_AS_Missile}
 
 -- Shared "this is a support/adapter rack" type descriptor, matching what
 -- every stock LAU-88 AGM-65 entry uses (same tuple regardless of Maverick
--- variant or count - it describes the RACK, not the missile). Using the
--- literal id 4 here (not WSTYPE_PLACEHOLDER) - confirmed the hard way
--- that adapter_type goes through the same wsTypeToString/string.format
--- path as wsTypeOfWeapon, so an unresolved placeholder crashes the
--- Mission Editor's warehouse code here too, exactly like it did there.
+-- variant or count - it describes the RACK, not the missile). Literal id
+-- 4, not WSTYPE_PLACEHOLDER (see history note above).
 local ADAPTER_TYPE = {wsType_Weapon, wsType_GContainer, wsType_Support, 4}
 
 ----------------------------------------------------------------
@@ -76,31 +69,34 @@ declare_loadout({
 	Cx_pil          = 0.00244140625 + 2 * 0.001953125,
 	Elements = {
 		{ ShapeName = "BRU_55", IsAdapter = true, DrawArgs = {{3, 0.1}} },
-		{ payload_CLSID = HARM_CLSID, connector_name = "Point01" },
-		{ payload_CLSID = HARM_CLSID, connector_name = "Point02" },
+		{ connector_name = "Point01", ShapeName = HARM_SHAPE },
+		{ connector_name = "Point02", ShapeName = HARM_SHAPE },
 	}
 })
 
 ----------------------------------------------------------------
--- Rack 2: BRU-42A (corpo do TALD triplo) com 3x AGM-65F Maverick
+-- Rack 2: LAU-88 (corpo real de fabrica) com 3x AGM-65F Maverick
+-- Mesma geometria (posicoes/rotacoes) que o lau_88() stock usa pra
+-- count=3, copiada de agm65_family.lua - sao os offsets corretos pro
+-- modelo 3D real do LAU-88, entao reaproveitamos em vez de adivinhar.
 ----------------------------------------------------------------
 declare_loadout({
 	category        = CAT_MISSILES,
-	CLSID           = "{BRU42A_x3_AGM65F}",
+	CLSID           = "{LAU88_x3_AGM65F}",
 	Picture         = "agm65.png",
-	displayName     = _("BRU-42A - 3 x AGM-65F Maverick"),
+	displayName     = _("LAU-88 - 3 x AGM-65F Maverick"),
 	wsTypeOfWeapon  = wsType_Maverick,
 	attribute       = {4, 4, 32, WSTYPE_PLACEHOLDER},
 	kind_of_shipping = 1, -- SUBMUNITION_AND_CONTAINER_SEPARATELY
 	adapter_type     = ADAPTER_TYPE,
 	Count           = 3,
-	Weight          = 50.80 + 3 * MAVERICK_UNIT_MASS,
+	Weight          = 90.0 + 3 * MAVERICK_UNIT_MASS,  -- LAU-88 empty mass (aprox, stock uses ~90kg)
 	Cx_pil          = 0.00244140625 + 3 * 0.001953125,
 	Elements = {
-		{ ShapeName = "BRU_42A", IsAdapter = true },
-		{ payload_CLSID = MAVERICK_CLSID, connector_name = "Point01" },
-		{ payload_CLSID = MAVERICK_CLSID, connector_name = "Point02" },
-		{ payload_CLSID = MAVERICK_CLSID, connector_name = "Point03" },
+		{ ShapeName = "LAU-88" },
+		{ Position = {0.252, -0.146, 0},     ShapeName = MAVERICK_SHAPE, Rotation = {0, 0, 0} },
+		{ Position = {0.252, 0.085, 0.259},  ShapeName = MAVERICK_SHAPE, Rotation = {-90, 0, 0} },
+		{ Position = {0.252, 0.085, -0.259}, ShapeName = MAVERICK_SHAPE, Rotation = {90, 0, 0} },
 	}
 })
 
@@ -108,8 +104,8 @@ declare_loadout({
 -- Add both racks as options on all 4 wing stations
 ----------------------------------------------------------------
 local function addOptions(pylonOptionTable)
-	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
-	table.insert(pylonOptionTable, { CLSID = "{BRU42A_x3_AGM65F}", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
+	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",      Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
+	table.insert(pylonOptionTable, { CLSID = "{LAU88_x3_AGM65F}",    Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
 end
 
 addOptions(outboardLeft)
