@@ -37,3 +37,17 @@ table.insert(unitPayloads.payloads, {
 	},
 	["tasks"] = { [1] = 19 },
 })
+
+table.insert(unitPayloads.payloads, {
+	["name"] = "[DEAD] AGM-65E*12, FUEL*1",
+	["pylons"] = {
+		[1] = {["CLSID"] = "{BRU42A_x3_AGM65E}", ["num"] = 2},
+		[2] = {["CLSID"] = "{BRU42A_x3_AGM65E}", ["num"] = 3},
+		[3] = {["CLSID"] = "{BRU42A_x3_AGM65E}", ["num"] = 7},
+		[4] = {["CLSID"] = "{BRU42A_x3_AGM65E}", ["num"] = 8},
+		[5] = {["CLSID"] = "{FPU_8A_FUEL_TANK}", ["num"] = 5},
+		[6] = {["CLSID"] = "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}", ["num"] = 1},
+		[7] = {["CLSID"] = "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}", ["num"] = 9},
+	},
+	["tasks"] = { [1] = 32 },
+})
