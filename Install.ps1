@@ -112,19 +112,39 @@ $SavedGames = Resolve-InteractivePath -Override $SavedGamesPath -Candidates $Sav
     -FriendlyName "your DCS Saved Games folder (only used to point you at dcs.log afterward)" -Optional
 if ($SavedGames) { Write-Host "Using Saved Games folder: $SavedGames" -ForegroundColor Cyan }
 
-$PkgRoot   = Join-Path $PSScriptRoot "DROP CONTENTS IN MAIN DIRECTORY\CoreMods\aircraft\FA-18C"
-$Fa18File  = Join-Path $Dcs "CoreMods\aircraft\FA-18C\FA-18C_hornet.lua"
-$PayFile   = Join-Path $Dcs "CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua"
-$CustomSrc = Join-Path $PkgRoot "CustomWeapons\dead_sead_racks.lua"
-$CustomDst = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons\dead_sead_racks.lua"
+$PkgRoot      = Join-Path $PSScriptRoot "DROP CONTENTS IN MAIN DIRECTORY\CoreMods\aircraft\FA-18C"
+$Fa18File     = Join-Path $Dcs "CoreMods\aircraft\FA-18C\FA-18C_hornet.lua"
+$PayFile      = Join-Path $Dcs "CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua"
+$CustomDir    = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons"
+$RacksSrc     = Join-Path $PkgRoot "CustomWeapons\dead_sead_racks.lua"
+$RacksDst     = Join-Path $CustomDir "dead_sead_racks.lua"
+$PresetsSrc   = Join-Path $PkgRoot "CustomWeapons\dead_sead_presets.lua"
+$PresetsDst   = Join-Path $CustomDir "dead_sead_presets.lua"
 
 if (-not (Test-Path $Fa18File)) { throw "Not found: $Fa18File - is this really a DCS World install?" }
 if (-not (Test-Path $PayFile))  { throw "Not found: $PayFile" }
-if (-not (Test-Path $CustomSrc)) { throw "Not found: $CustomSrc" }
+if (-not (Test-Path $RacksSrc)) { throw "Not found: $RacksSrc" }
+if (-not (Test-Path $PresetsSrc)) { throw "Not found: $PresetsSrc" }
 
+# Bake the absolute install-time path into the generated Lua as a plain
+# string literal (forward slashes), instead of relying on any Lua global
+# like current_mod_path/lfs.currentdir() being valid in whatever state
+# loads each file - UnitPayloads\FA-18C_hornet.lua in particular is
+# loaded through a different path than the aircraft's own entry.lua
+# chain, and there's no evidence current_mod_path exists there.
+$RacksDstLua   = $RacksDst.Replace('\', '/')
+$PresetsDstLua = $PresetsDst.Replace('\', '/')
+
+# Each target file is checked and patched INDEPENDENTLY - don't assume
+# both are always in sync (a prior run could have been interrupted, or
+# one file could have been hand-edited/restored separately).
 $fa18Content = Read-TextFile $Fa18File
-if ($fa18Content.Contains($MARK_BEGIN)) {
-    Write-Host "Already installed (marker found in FA-18C_hornet.lua). Run Uninstall.ps1 first if you want to reinstall." -ForegroundColor Yellow
+$payContent  = Read-TextFile $PayFile
+$fa18AlreadyDone = $fa18Content.Contains($MARK_BEGIN)
+$payAlreadyDone  = $payContent.Contains($MARK_BEGIN)
+
+if ($fa18AlreadyDone -and $payAlreadyDone) {
+    Write-Host "Already installed (marker found in both files). Run Uninstall.ps1 first if you want to reinstall." -ForegroundColor Yellow
     exit 0
 }
 
@@ -132,15 +152,23 @@ if ($fa18Content.Contains($MARK_BEGIN)) {
 $BackupRoot = Join-Path $PSScriptRoot ("backups\" + (Get-Date -Format "yyyyMMdd_HHmmss"))
 New-Item -ItemType Directory -Force $BackupRoot | Out-Null
 Write-Host "Backing up originals to $BackupRoot ..."
-Backup-File -Path $Fa18File -BackupRoot $BackupRoot
-Backup-File -Path $PayFile  -BackupRoot $BackupRoot
+if (-not $fa18AlreadyDone) { Backup-File -Path $Fa18File -BackupRoot $BackupRoot }
+if (-not $payAlreadyDone)  { Backup-File -Path $PayFile  -BackupRoot $BackupRoot }
 
 # 2) Append to FA-18C_hornet.lua (end of file - no mid-file anchor needed).
-#    dofile() is wrapped in pcall so a problem loading the new weapons
-#    file can't take down the whole aircraft/database load.
+#    All this mod's actual logic lives in CustomWeapons\dead_sead_racks.lua.
+#    It's loaded via loadfile()+call (not dofile()) so it can receive the
+#    local outboardLeft/outboardRight/inboardLeft/inboardRight pylon-option
+#    tables as arguments and append its own new rack options to them - the
+#    only reason it can reach those normally-out-of-scope locals at all.
+#    Wrapped in pcall so a problem loading that file can't take down the
+#    whole aircraft/database load.
 $fa18Block = @(
     $MARK_BEGIN,
-    "local ok, err = pcall(dofile, current_mod_path..'/CustomWeapons/dead_sead_racks.lua')",
+    "local ok, err = pcall(function()",
+    "	local chunk = assert(loadfile(`"$RacksDstLua`"))",
+    "	chunk(outboardLeft, outboardRight, inboardLeft, inboardRight)",
+    "end)",
     "if not ok then",
     "	if log and log.write then",
     "		log.write('SEAD_DEAD_MOD', log.ERROR, 'Failed to load dead_sead_racks.lua: '..tostring(err))",
@@ -148,66 +176,56 @@ $fa18Block = @(
     "		print('[SEAD_DEAD_MOD] Failed to load dead_sead_racks.lua: '..tostring(err))",
     "	end",
     "end",
-    "table.insert(outboardLeft,  { CLSID = `"{BRU55_2xAGM88}`",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })",
-    "table.insert(outboardLeft,  { CLSID = `"{BRU42A_x3_AGM65E}`", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })",
-    "table.insert(outboardRight, { CLSID = `"{BRU55_2xAGM88}`",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })",
-    "table.insert(outboardRight, { CLSID = `"{BRU42A_x3_AGM65E}`", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })",
-    "table.insert(inboardLeft,   { CLSID = `"{BRU55_2xAGM88}`",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })",
-    "table.insert(inboardLeft,   { CLSID = `"{BRU42A_x3_AGM65E}`", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })",
-    "table.insert(inboardRight,  { CLSID = `"{BRU55_2xAGM88}`",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })",
-    "table.insert(inboardRight,  { CLSID = `"{BRU42A_x3_AGM65E}`", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })",
     $MARK_END
 )
-$fa18New = $fa18Content.TrimEnd("`r", "`n") + "`r`n" + ($fa18Block -join "`r`n") + "`r`n"
-Write-TextFile -Path $Fa18File -Content $fa18New
-Write-Host "Patched (appended): $Fa18File"
+if ($fa18AlreadyDone) {
+    Write-Host "Skipped (already patched): $Fa18File" -ForegroundColor Yellow
+} else {
+    $fa18New = $fa18Content.TrimEnd("`r", "`n") + "`r`n" + ($fa18Block -join "`r`n") + "`r`n"
+    Write-TextFile -Path $Fa18File -Content $fa18New
+    Write-Host "Patched (appended): $Fa18File"
+}
 
 # 3) Insert into UnitPayloads\FA-18C_hornet.lua right before "return unitPayloads"
 #    (the file's mandatory last line - the one anchor guaranteed to exist).
+#    Same loadfile()+call trick: dead_sead_presets.lua receives the local
+#    `unitPayloads` table as an argument and appends its own preset entries
+#    to unitPayloads.payloads itself - all the actual preset data lives in
+#    that file, not here.
 $presetBlock = @(
     $MARK_BEGIN,
-    'table.insert(unitPayloads.payloads, {',
-    '	["name"] = "[SEAD] AGM-88*8, FUEL*1",',
-    '	["pylons"] = {',
-    '		[1] = {["CLSID"] = "{BRU55_2xAGM88}", ["num"] = 2},',
-    '		[2] = {["CLSID"] = "{BRU55_2xAGM88}", ["num"] = 3},',
-    '		[3] = {["CLSID"] = "{BRU55_2xAGM88}", ["num"] = 7},',
-    '		[4] = {["CLSID"] = "{BRU55_2xAGM88}", ["num"] = 8},',
-    '		[5] = {["CLSID"] = "{FPU_8A_FUEL_TANK}", ["num"] = 5},',
-    '		[6] = {["CLSID"] = "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}", ["num"] = 1},',
-    '		[7] = {["CLSID"] = "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}", ["num"] = 9},',
-    '	},',
-    '	["tasks"] = { [1] = 19 },',
-    '})',
-    'table.insert(unitPayloads.payloads, {',
-    '	["name"] = "[SEAD+DEAD] AGM-88*4, AGM-65E*6, FUEL*1",',
-    '	["pylons"] = {',
-    '		[1] = {["CLSID"] = "{BRU55_2xAGM88}", ["num"] = 3},',
-    '		[2] = {["CLSID"] = "{BRU55_2xAGM88}", ["num"] = 7},',
-    '		[3] = {["CLSID"] = "{BRU42A_x3_AGM65E}", ["num"] = 2},',
-    '		[4] = {["CLSID"] = "{BRU42A_x3_AGM65E}", ["num"] = 8},',
-    '		[5] = {["CLSID"] = "{FPU_8A_FUEL_TANK}", ["num"] = 5},',
-    '		[6] = {["CLSID"] = "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}", ["num"] = 1},',
-    '		[7] = {["CLSID"] = "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}", ["num"] = 9},',
-    '	},',
-    '	["tasks"] = { [1] = 19 },',
-    '})',
+    "local ok, err = pcall(function()",
+    "	local chunk = assert(loadfile(`"$PresetsDstLua`"))",
+    "	chunk(unitPayloads)",
+    "end)",
+    "if not ok then",
+    "	if log and log.write then",
+    "		log.write('SEAD_DEAD_MOD', log.ERROR, 'Failed to load dead_sead_presets.lua: '..tostring(err))",
+    "	else",
+    "		print('[SEAD_DEAD_MOD] Failed to load dead_sead_presets.lua: '..tostring(err))",
+    "	end",
+    "end",
     $MARK_END
 )
-$payContent = Read-TextFile $PayFile
-$returnPattern = [regex]::new("(?m)^return\s+unitPayloads\s*$")
-if (-not $returnPattern.IsMatch($payContent)) {
-    throw "Could not find 'return unitPayloads' in $PayFile - manual merge needed (see README)."
+if ($payAlreadyDone) {
+    Write-Host "Skipped (already patched): $PayFile" -ForegroundColor Yellow
+} else {
+    $returnPattern = [regex]::new("(?m)^return\s+unitPayloads\s*$")
+    if (-not $returnPattern.IsMatch($payContent)) {
+        throw "Could not find 'return unitPayloads' in $PayFile - manual merge needed (see README)."
+    }
+    $insertText = ($presetBlock -join "`r`n") + "`r`n"
+    $payNew = $returnPattern.Replace($payContent, { param($m) $insertText + $m.Value }, 1)
+    Write-TextFile -Path $PayFile -Content $payNew
+    Write-Host "Patched (inserted before return): $PayFile"
 }
-$insertText = ($presetBlock -join "`r`n") + "`r`n"
-$payNew = $returnPattern.Replace($payContent, { param($m) $insertText + $m.Value }, 1)
-Write-TextFile -Path $PayFile -Content $payNew
-Write-Host "Patched (inserted before return): $PayFile"
 
 # 4) Drop in the new weapon-declaration file (brand new file, no merge needed)
-New-Item -ItemType Directory -Force (Split-Path $CustomDst) | Out-Null
-Copy-Item $CustomSrc $CustomDst -Force
-Write-Host "Installed: $CustomDst"
+New-Item -ItemType Directory -Force $CustomDir | Out-Null
+Copy-Item $RacksSrc   $RacksDst   -Force
+Copy-Item $PresetsSrc $PresetsDst -Force
+Write-Host "Installed: $RacksDst"
+Write-Host "Installed: $PresetsDst"
 
 Write-Host ""
 Write-Host "Done. Launch DCS and check the F/A-18C loadout editor (stations 2/3/7/8) and the rearm menu." -ForegroundColor Green

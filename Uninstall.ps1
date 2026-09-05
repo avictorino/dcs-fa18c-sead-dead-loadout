@@ -3,7 +3,8 @@
   Removes only the marker-bounded blocks this mod inserted into
   FA-18C_hornet.lua / UnitPayloads\FA-18C_hornet.lua, leaving any
   other mod's edits to those same files untouched. Also removes the
-  CustomWeapons\dead_sead_racks.lua file this mod added.
+  CustomWeapons\dead_sead_racks.lua and dead_sead_presets.lua files this
+  mod added.
 
   File I/O uses raw .NET ReadAllText/WriteAllText (UTF-8, no BOM)
   instead of Get-Content/Set-Content, because Windows PowerShell's
@@ -106,8 +107,9 @@ if ($SavedGames) { Write-Host "Using Saved Games folder: $SavedGames" -Foregroun
 
 $Fa18File  = Join-Path $Dcs "CoreMods\aircraft\FA-18C\FA-18C_hornet.lua"
 $PayFile   = Join-Path $Dcs "CoreMods\aircraft\FA-18C\UnitPayloads\FA-18C_hornet.lua"
-$CustomDst = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons\dead_sead_racks.lua"
-$CustomDir = Split-Path $CustomDst
+$CustomDir    = Join-Path $Dcs "CoreMods\aircraft\FA-18C\CustomWeapons"
+$RacksDst     = Join-Path $CustomDir "dead_sead_racks.lua"
+$PresetsDst   = Join-Path $CustomDir "dead_sead_presets.lua"
 
 $n1 = Remove-MarkedBlocks -Path $Fa18File
 Write-Host "Removed $n1 marked block(s) from: $Fa18File"
@@ -115,13 +117,15 @@ Write-Host "Removed $n1 marked block(s) from: $Fa18File"
 $n2 = Remove-MarkedBlocks -Path $PayFile
 Write-Host "Removed $n2 marked block(s) from: $PayFile"
 
-if (Test-Path $CustomDst) {
-    Remove-Item $CustomDst -Force
-    Write-Host "Removed: $CustomDst"
-    if ((Test-Path $CustomDir) -and ((Get-ChildItem $CustomDir -Force | Measure-Object).Count -eq 0)) {
-        Remove-Item $CustomDir -Force
-        Write-Host "Removed empty folder: $CustomDir"
+foreach ($f in @($RacksDst, $PresetsDst)) {
+    if (Test-Path $f) {
+        Remove-Item $f -Force
+        Write-Host "Removed: $f"
     }
+}
+if ((Test-Path $CustomDir) -and ((Get-ChildItem $CustomDir -Force | Measure-Object).Count -eq 0)) {
+    Remove-Item $CustomDir -Force
+    Write-Host "Removed empty folder: $CustomDir"
 }
 
 if ($n1 -eq 0 -and $n2 -eq 0) {

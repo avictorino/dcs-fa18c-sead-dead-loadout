@@ -1,4 +1,4 @@
-F/A-18C SEAD/DEAD Loadout Extension - v0.4
+F/A-18C SEAD/DEAD Loadout Extension - v0.5
 ====================================================
 
 WHAT IT DOES
@@ -33,26 +33,52 @@ To remove it: run Uninstall.ps1 the same way (as Administrator).
 Both scripts also accept explicit paths to skip the prompts:
   .\Install.ps1 -DcsPath "C:\..." -SavedGamesPath "C:\..."
 
-HOW THE SCRIPTS WORK (no whole-file overwrite)
---------------------------------------------------
-Instead of replacing FA-18C_hornet.lua wholesale, Install.ps1 APPENDS
-a small block to the END of the file, wrapped in marker comments:
+HOW THE SCRIPTS WORK (minimal footprint in the stock files)
+------------------------------------------------------------
+Instead of replacing FA-18C_hornet.lua wholesale, or even inlining
+this mod's logic into it, Install.ps1 appends ONE tiny marker-wrapped
+block to the END of the file:
   -- >>> SEAD_DEAD_MOD ... -- <<< SEAD_DEAD_MOD
-This works because outboardLeft/outboardRight/inboardLeft/inboardRight
-are `local` tables declared earlier in that same file - code appended
-at the end of the file still sees them (same Lua chunk) and runs
-before make_FA_18C_hornet() is ever called (that happens later, from
-outside the file), so the new options are present by the time the
-pylon list is built. The new dofile() call that loads this mod's
-weapon declarations is wrapped in pcall, so if that file ever fails
-to load, it logs the error instead of breaking aircraft loading.
-The rearm presets are added to UnitPayloads\FA-18C_hornet.lua the
-same way, inserted right before its mandatory "return unitPayloads"
-line.
-Uninstall.ps1 just deletes everything between the markers, so both
-scripts leave any other mod's edits to the same files untouched.
-Originals are backed up to .\backups\<timestamp>\ before the first
-patch, as a safety net.
+That block does nothing but loadfile() this mod's own
+CustomWeapons\dead_sead_racks.lua and call it, passing in the file's
+local outboardLeft/outboardRight/inboardLeft/inboardRight pylon-option
+tables as arguments (loadfile()+call is used instead of dofile()
+specifically so those tables can be passed in - dead_sead_racks.lua
+is otherwise a separate Lua chunk with no access to another file's
+locals). ALL of the actual mod logic - the two declare_loadout() rack
+definitions and the table.insert() calls that add them as pylon
+options - lives in that one file, not in FA-18C_hornet.lua. This
+still works because make_FA_18C_hornet() is only invoked from outside
+the file, later, by which point dead_sead_racks.lua has already
+mutated those tables.
+The call is wrapped in pcall, so if dead_sead_racks.lua ever fails to
+load, it logs the error (log.write, falling back to print) instead
+of breaking aircraft loading.
+UnitPayloads\FA-18C_hornet.lua gets the same treatment: one tiny block
+inserted right before its mandatory "return unitPayloads" line, which
+loadfile()+calls CustomWeapons\dead_sead_presets.lua, passing in the
+local `unitPayloads` table - that file does the actual
+table.insert(unitPayloads.payloads, ...) for the two rearm presets.
+Both loadfile() calls use an absolute path baked in by Install.ps1 at
+install time (not current_mod_path or lfs.currentdir()), since
+there's no guarantee either of those globals is valid in whatever Lua
+state loads the payloads file.
+Uninstall.ps1 deletes everything between the markers in both files
+(each checked/skipped independently, so a partially-applied previous
+install can't cause a double-insert) and removes both CustomWeapons
+files it added - leaving any other mod's edits to the same files
+untouched. Originals are backed up to .\backups\<timestamp>\ before
+the first patch, as a safety net.
+
+UPGRADING FROM AN OLDER VERSION OF THIS MOD
+-----------------------------------------------
+Older versions of Install.ps1 inlined the rack options and rearm
+presets directly into FA-18C_hornet.lua / UnitPayloads\FA-18C_hornet.lua
+instead of delegating to CustomWeapons\dead_sead_racks.lua /
+dead_sead_presets.lua. If you installed one of those earlier versions,
+run this version's Uninstall.ps1 first (it strips the old marker
+block just as well as the new one), then run Install.ps1 again to get
+the current, minimal-footprint version.
 
 This install method (patching CoreMods directly) is required because
 Saved Games\DCS\Mods only overrides cockpit display scripts, not

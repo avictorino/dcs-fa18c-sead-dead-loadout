@@ -7,7 +7,15 @@
 	CLSIDs de munição reaproveitados do stock (ver FA-18C_hornet.lua original):
 		AGM-88 on LAU-118  -> {B06DD79A-F21E-4EB9-BD9D-AB3844618C93}
 		AGM-65E on LAU-117 -> {F16A4DE0-116C-4A71-97F0-2CF85B0313EC}
+
+	This file is loaded via loadfile()+call (not dofile()) from
+	FA-18C_hornet.lua, which passes its local pylon-option tables in as
+	arguments - that's the only reason this file can add the new rack
+	options to them, since they're normally out of reach (local to that
+	other file's own chunk). Everything else the mod needs lives here.
 ]]
+
+local outboardLeft, outboardRight, inboardLeft, inboardRight = ...
 
 local HARM_CLSID     = "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"
 local MAVERICK_CLSID = "{F16A4DE0-116C-4A71-97F0-2CF85B0313EC}"
@@ -58,3 +66,16 @@ declare_loadout({
 		{ payload_CLSID = MAVERICK_CLSID, connector_name = "Point03" },
 	}
 })
+
+----------------------------------------------------------------
+-- Add both racks as options on all 4 wing stations
+----------------------------------------------------------------
+local function addOptions(pylonOptionTable)
+	table.insert(pylonOptionTable, { CLSID = "{BRU55_2xAGM88}",    Cx_gain_empty = 0.371, Cx_gain_item = 0.621 })
+	table.insert(pylonOptionTable, { CLSID = "{BRU42A_x3_AGM65E}", Cx_gain_empty = 0.338, Cx_gain_item = 1.593 })
+end
+
+addOptions(outboardLeft)
+addOptions(outboardRight)
+addOptions(inboardLeft)
+addOptions(inboardRight)
